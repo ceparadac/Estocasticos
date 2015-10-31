@@ -135,6 +135,19 @@ Time::SetResolution (Time::NS);
 
 
 
+  MobilityHelper mobility;
+  Ptr<ListPositionAllocator> positionAlloc = CreateObject <ListPositionAllocator>();
+  positionAlloc ->Add(Vector(0, 0, 0)); // node0
+  positionAlloc ->Add(Vector(150, 0, 0)); // node1 -- starting very far away
+  positionAlloc ->Add(Vector(0, 150, 0)); // node2
+  positionAlloc ->Add(Vector(0, 0, 150)); 
+  positionAlloc ->Add(Vector(200, 0, 0)); 
+  positionAlloc ->Add(Vector(0, 200, 0)); 
+  mobility.SetPositionAllocator(positionAlloc);
+  mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+  mobility.Install(wirelessNodes);
+
+
   
 
 
