@@ -105,13 +105,13 @@ Time::SetResolution (Time::NS);
           wirelessDevices = wifi.Install (wifiPhy, wifiMac, wirelessNodes);
 
 
-
+        //Installing ipStack for cabled and wireless nodes
         InternetStackHelper ipStack;
         ipStack.Install (cabledNodes);
         ipStack.Install (wirelessNodes);
 
 
-         // Assing the ip addressed to each cabled node
+         // Assing the ip addressed to all nodes
          NS_LOG_INFO ("Assign ip addresses.");
          Ipv4AddressHelper ip;
          ip.SetBase ("192.168.0.0", "255.255.255.0");
@@ -134,7 +134,7 @@ Time::SetResolution (Time::NS);
         Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
 
-
+//Configuring the position of the wireless nodes and their mobility
   MobilityHelper mobility;
   Ptr<ListPositionAllocator> positionAlloc = CreateObject <ListPositionAllocator>();
   positionAlloc ->Add(Vector(0, 0, 0)); // node0
@@ -148,8 +148,7 @@ Time::SetResolution (Time::NS);
   mobility.Install(wirelessNodes);
 
 
-  
-
+   
 
 
         Simulator::Run ();

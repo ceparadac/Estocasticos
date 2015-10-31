@@ -105,13 +105,13 @@ Time::SetResolution (Time::NS);
           wirelessDevices = wifi.Install (wifiPhy, wifiMac, wirelessNodes);
 
 
-
+        //Installing ipStack for cabled and wireless nodes
         InternetStackHelper ipStack;
         ipStack.Install (cabledNodes);
         ipStack.Install (wirelessNodes);
 
 
-         // Assing the ip addressed to each cabled node
+         // Assing the ip addressed to all nodes
          NS_LOG_INFO ("Assign ip addresses.");
          Ipv4AddressHelper ip;
          ip.SetBase ("192.168.0.0", "255.255.255.0");
@@ -134,8 +134,35 @@ Time::SetResolution (Time::NS);
         Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
 
+//Configuring the position of the wireless nodes and their mobility
+  MobilityHelper mobility;
+  Ptr<ListPositionAllocator> positionAlloc = CreateObject <ListPositionAllocator>();
+  positionAlloc ->Add(Vector(0, 0, 0)); // node0
+  positionAlloc ->Add(Vector(150, 0, 0)); // node1 -- starting very far away
+  positionAlloc ->Add(Vector(0, 150, 0)); // node2
+  positionAlloc ->Add(Vector(0, 0, 150)); 
+  positionAlloc ->Add(Vector(200, 0, 0)); 
+  positionAlloc ->Add(Vector(0, 200, 0)); 
+  mobility.SetPositionAllocator(positionAlloc);
+  mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+  mobility.Install(wirelessNodes);
 
-  
+
+         // se crea el servidor que va  recibir trafico  que en este caso es el nodo 2
+  UdpEchoServerHelper echoServer (9);
+  ApplicationContainer serverApps = echoServer.Install (wirelessNodes.Get (4));
+  serverApps.Start (Seconds (1.0));
+  serverApps.Stop (Seconds (10.0));
+  // los datagramas que  va a enviar el cliente al servidor, se especifica la direccion IP del servidor , el tamaño del paquete
+  UdpEchoClientHelper echoClient (addresses4.GetAddress(0), 9);
+    echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
+  echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
+  echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
+  //El cliente es el nodo 0
+  ApplicationContainer clientApps = echoClient.Install (wirelessNodes.Get (1));
+  clientApps.Start (Seconds (4.0));
+  clientApps.Stop (Seconds (10.0));
+pointToPointHelper.EnablePcapAll ("tut1");
 
 
 
