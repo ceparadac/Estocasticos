@@ -27,7 +27,25 @@ NS_LOG_COMPONENT_DEFINE ("TallerNS3");
 int
 main (int argc, char *argv[])
 {
-  Simulator::Run ();
-  Simulator::Destroy ();
-  return 0;
+
+        // Create the 4 point to point cable nodes
+        NodeContainer cabledNodes;
+        cabledNodes.Create(4);
+
+        // Configure the point to point links
+        PointToPointHelper pointToPointHelper;
+        pointToPointHelper.SetDeviceAttribute ("DataRate", StringValue ("10Mbps"));
+        pointToPointHelper.SetChannelAttribute ("Delay", StringValue ("1ms"));
+
+        //Assing the point to point links to the respective nodes
+
+        NetDeviceContainer devices;
+        devices.Add (pointToPointHelper.Install (cabledNodes.Get (0), cabledNodes.Get (2)));
+        devices.Add (pointToPointHelper.Install (cabledNodes.Get (2), cabledNodes.Get (3)));
+        devices.Add (pointToPointHelper.Install (cabledNodes.Get (3), cabledNodes.Get (1)));
+        devices.Add (pointToPointHelper.Install (cabledNodes.Get (1), cabledNodes.Get (0)));
+
+        Simulator::Run ();
+        Simulator::Destroy ();
+        return 0;
 }
