@@ -38,6 +38,10 @@ main (int argc, char *argv[])
 //Defining constant phymode
 std::string phyMode ("DsssRate1Mbps");
 
+Time::SetResolution (Time::NS);
+  LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
+  LogComponentEnable ("UdpEchoServerApplication", LOG_LEVEL_INFO);
+
         // Create the 4 point to point cable nodes
         NodeContainer cabledNodes;
         cabledNodes.Create(4);
@@ -56,92 +60,84 @@ std::string phyMode ("DsssRate1Mbps");
         cableDevices.Add (pointToPointHelper.Install (cabledNodes.Get (1), cabledNodes.Get (0)));
 
 
-        //Creating the ip stack for the connection (OSI Layer 3)
-
-        InternetStackHelper ipStack;
-        ipStack.Install (cabledNodes);
-
-
-         // Assing the ip addressed to each cabled node
-         NS_LOG_INFO ("Assign ip addresses.");
-         Ipv4AddressHelper ip;
-         ip.SetBase ("192.168.0.7", "255.255.255.0");
-         Ipv4InterfaceContainer addresses = ip.Assign (cableDevices.Get (0));
-
-         Ipv4AddressHelper ip1;
-         ip1.SetBase ("192.168.0.8", "255.255.255.0");
-         Ipv4InterfaceContainer addresses1 = ip1.Assign (cableDevices.Get (1));
-
-         Ipv4AddressHelper ip2;
-         ip2.SetBase ("192.168.0.9", "255.255.255.0");
-         Ipv4InterfaceContainer addresses2 = ip2.Assign (cableDevices.Get (2));
-
-         Ipv4AddressHelper ip3;
-         ip3.SetBase ("192.168.0.10", "255.255.255.0");
-         Ipv4InterfaceContainer addresses3 = ip3.Assign (cableDevices.Get (3));
-
-
-        // Create the 4 point to point cable nodes
+        // Create the 6 wireless nodes
         NodeContainer wirelessNodes;
         wirelessNodes.Create(6);
 
         // Creating the WIFI Helper
         WifiHelper wifi;
 
-//Configuring the helper for 802.11 Protocol
-  YansWifiPhyHelper wifiPhy =  YansWifiPhyHelper::Default ();
-  wifiPhy.SetPcapDataLinkType (YansWifiPhyHelper::DLT_IEEE802_11);
+        //Configuring the helper for 802.11 Protocol
+          YansWifiPhyHelper wifiPhy =  YansWifiPhyHelper::Default ();
+          wifiPhy.SetPcapDataLinkType (YansWifiPhyHelper::DLT_IEEE802_11);
 
-  YansWifiChannelHelper wifiChannel ;
-  wifiChannel.SetPropagationDelay ("ns3::ConstantSpeedPropagationDelayModel");
-  wifiChannel.AddPropagationLoss ("ns3::TwoRayGroundPropagationLossModel",
-	  	  	  	  	  	  	  	    "SystemLoss", DoubleValue(1),
-		  	  	  	  	  	  	    "HeightAboveZ", DoubleValue(1.5));
+          YansWifiChannelHelper wifiChannel ;
+          wifiChannel.SetPropagationDelay ("ns3::ConstantSpeedPropagationDelayModel");
+          wifiChannel.AddPropagationLoss ("ns3::TwoRayGroundPropagationLossModel",
+	          	  	  	  	  	  	  	    "SystemLoss", DoubleValue(1),
+		          	  	  	  	  	  	    "HeightAboveZ", DoubleValue(1.5));
 
-  // Configuring the phisical values related to the Transmission Antenna Power, Gain etc
-  wifiPhy.Set ("TxPowerStart", DoubleValue(33));
-  wifiPhy.Set ("TxPowerEnd", DoubleValue(33));
-  wifiPhy.Set ("TxPowerLevels", UintegerValue(1));
-  wifiPhy.Set ("TxGain", DoubleValue(0));
-  wifiPhy.Set ("RxGain", DoubleValue(0));
-  wifiPhy.Set ("EnergyDetectionThreshold", DoubleValue(-61.8));
-  wifiPhy.Set ("CcaMode1Threshold", DoubleValue(-64.8));
+          // Configuring the phisical values related to the Transmission Antenna Power, Gain etc
+          wifiPhy.Set ("TxPowerStart", DoubleValue(33));
+          wifiPhy.Set ("TxPowerEnd", DoubleValue(33));
+          wifiPhy.Set ("TxPowerLevels", UintegerValue(1));
+          wifiPhy.Set ("TxGain", DoubleValue(0));
+          wifiPhy.Set ("RxGain", DoubleValue(0));
+          wifiPhy.Set ("EnergyDetectionThreshold", DoubleValue(-61.8));
+          wifiPhy.Set ("CcaMode1Threshold", DoubleValue(-64.8));
 
-   //Configuring the working channel of the wifi interface
-  wifiPhy.SetChannel (wifiChannel.Create ());
+           //Configuring the working channel of the wifi interface
+          wifiPhy.SetChannel (wifiChannel.Create ());
 
-  // Add a non-QoS upper mac
-  NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
-  wifiMac.SetType ("ns3::AdhocWifiMac");
+          // Add a non-QoS upper mac
+          NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
+          wifiMac.SetType ("ns3::AdhocWifiMac");
 
-  // Set 802.11b standard
-  wifi.SetStandard (WIFI_PHY_STANDARD_80211b);
+          // Set 802.11b standard
+          wifi.SetStandard (WIFI_PHY_STANDARD_80211b);
 
-  wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
-                                "DataMode",StringValue(phyMode),
-                                "ControlMode",StringValue(phyMode));
+          wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
+                                        "DataMode",StringValue(phyMode),
+                                        "ControlMode",StringValue(phyMode));
 
-  //Creating the configured interfaces on the wireless nodes (OSI Layer 1)
-  NetDeviceContainer wirelessDevices;
-  wirelessDevices = wifi.Install (wifiPhy, wifiMac, wirelessNodes);
-
-
+          //Creating the configured interfaces on the wireless nodes (OSI Layer 1)
+          NetDeviceContainer wirelessDevices;
+          wirelessDevices = wifi.Install (wifiPhy, wifiMac, wirelessNodes);
 
 
 
+        InternetStackHelper ipStack;
+        ipStack.Install (cabledNodes);
+        ipStack.Install (wirelessNodes);
 
 
+         // Assing the ip addressed to each cabled node
+         NS_LOG_INFO ("Assign ip addresses.");
+         Ipv4AddressHelper ip;
+         ip.SetBase ("192.168.0.0", "255.255.255.0");
+
+        Ipv4InterfaceContainer addresses = ip.Assign (wirelessDevices.Get (0));
+         Ipv4InterfaceContainer addresses1 = ip.Assign (wirelessDevices.Get (1));
+         Ipv4InterfaceContainer addresses2 = ip.Assign (wirelessDevices.Get (2));
+         Ipv4InterfaceContainer addresses3 = ip.Assign (wirelessDevices.Get (3));  
+         Ipv4InterfaceContainer addresses4 = ip.Assign (wirelessDevices.Get (4));  
+         Ipv4InterfaceContainer addresses5 = ip.Assign (wirelessDevices.Get (5));  
 
 
+         Ipv4InterfaceContainer addresses6 = ip.Assign (cableDevices.Get (0));
+         Ipv4InterfaceContainer addresses7 = ip.Assign (cableDevices.Get (1));
+         Ipv4InterfaceContainer addresses8 = ip.Assign (cableDevices.Get (2));
+         Ipv4InterfaceContainer addresses9 = ip.Assign (cableDevices.Get (3));
 
-
-
-
-
-
-
+  
 
         Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
+
+
+
+  
+
+
 
         Simulator::Run ();
         Simulator::Destroy ();
