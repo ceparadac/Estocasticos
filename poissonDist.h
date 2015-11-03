@@ -1,0 +1,26 @@
+#include "ns3/random-variable-stream.h"
+
+using namespace ns3;
+
+ class PoissonRandomVariable : public RandomVariableStream
+   {
+   public:
+     static TypeId GetTypeId (void);
+   
+     PoissonRandomVariable ();
+   
+     double GetLambda (void) const;
+
+     double GetValue (double lambda);
+   
+     uint32_t GetInteger (uint32_t lambda);
+   
+     // Inherited from RandomVariableStream
+     virtual double GetValue (void);
+     virtual uint32_t GetInteger (void);
+     
+   private:
+   double lambda;
+
+ 
+ }; 

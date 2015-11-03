@@ -26,7 +26,8 @@
 #include "ns3/olsr-module.h"
 #include "ns3/flow-monitor-module.h"
 #include "myapp.h"
-
+#include "poissonDist.h"
+#include "cauchyDist.h"
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("TallerNS3");
@@ -182,13 +183,7 @@ Time::SetResolution (Time::NS);
   mobility.Install(wirelessNodes);
 
 
-
-
-
-
-
-
-
+//Generating OnOff Constant Traffic from all the wireless nodes to a cabled node
  UdpEchoServerHelper echoServer (9);
  ApplicationContainer serverApps = echoServer.Install (cabledNodes.Get (2));
  serverApps.Start (Seconds (1.0));
@@ -200,16 +195,29 @@ ApplicationContainer apps = onoffconstant.Install (wirelessNodes);
 apps.Start (Seconds (2.0));
 apps.Stop (Seconds (68.0));
 
+//Generating OnOff Exponential Traffic from all the wireless nodes to a cabled node
  UdpEchoServerHelper echoServer2 (9);
  ApplicationContainer serverApps2 = echoServer2.Install (cabledNodes.Get (2));
  serverApps2.Start (Seconds (71.0));
  serverApps2.Stop (Seconds (140.0));
-OnOffHelper onoffconstant2("ns3::UdpSocketFactory", InetSocketAddress (cabledAddresses.GetAddress(2),9));
-onoffconstant2.SetAttribute("OnTime",StringValue("ns3::ExponentialRandomVariable[Mean=1.0]"));
-onoffconstant2.SetAttribute("OffTime",StringValue("ns3::ExponentialRandomVariable[Mean=1.0]"));
-ApplicationContainer apps2 = onoffconstant2.Install (wirelessNodes);
+OnOffHelper onoffexponential("ns3::UdpSocketFactory", InetSocketAddress (cabledAddresses.GetAddress(2),9));
+onoffexponential.SetAttribute("OnTime",StringValue("ns3::ExponentialRandomVariable[Mean=1.0]"));
+onoffexponential.SetAttribute("OffTime",StringValue("ns3::ExponentialRandomVariable[Mean=1.0]"));
+ApplicationContainer apps2 = onoffexponential.Install (wirelessNodes);
 apps2.Start (Seconds (72.0));
 apps2.Stop (Seconds (139.0));
+
+//Generating OnOff Cauchy Mix Poissson Traffic from all the wireless nodes to a cabled node
+ UdpEchoServerHelper echoServer3 (9);
+ ApplicationContainer serverApps3 = echoServer3.Install (cabledNodes.Get (2));
+ serverApps3.Start (Seconds (141.0));
+ serverApps3.Stop (Seconds (210.0));
+OnOffHelper onoffcauchypoissson("ns3::UdpSocketFactory", InetSocketAddress (cabledAddresses.GetAddress(2),9));
+onoffcauchypoissson.SetAttribute("OnTime",StringValue("ns3::CauchyRandomVariable[alpha=0|beta=1|min=0|max=3]"));
+onoffcauchypoissson.SetAttribute("OffTime",StringValue("ns3::PoissonRandomVariable[Lambda=1]"));
+ApplicationContainer apps3 = onoffcauchypoissson.Install (wirelessNodes);
+apps3.Start (Seconds (142.0));
+apps3.Stop (Seconds (209.0));
 
 pointToPoint.EnablePcapAll("PTP-Constant");
 
