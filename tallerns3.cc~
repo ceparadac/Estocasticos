@@ -20,7 +20,7 @@
 #include "ns3/point-to-point-module.h"
 #include "ns3/applications-module.h"
 
-
+#include "ns3/csma-helper.h"
 #include "ns3/mobility-module.h"
 #include "ns3/wifi-module.h"
 #include "ns3/olsr-module.h"
@@ -42,26 +42,51 @@ Time::SetResolution (Time::NS);
   LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
   LogComponentEnable ("UdpEchoServerApplication", LOG_LEVEL_INFO);
 
-        // Create the 4 point to point cable nodes
+        CommandLine cmd;
+   cmd.Parse (argc, argv);
+/*___________________________Bridge Nodes Creation__________________________________________*/
+
+
+
+        //Bridge Nodes (0 cabled, 1 wireless)
+        NodeContainer bridgeNodes; 
+        bridgeNodes.Create(2);
+
+        PointToPointHelper pointToPoint;
+        pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
+        pointToPoint.SetChannelAttribute ("Delay", StringValue ("2ms"));
+
+        // se crea construyen los enlaces punto a punto entre los dispositivos
+         NetDeviceContainer bridgeDevices;
+        bridgeDevices.Add (pointToPoint.Install (bridgeNodes.Get (0), bridgeNodes.Get (1)));
+
+
+
+/*_______________________________Cabled Nodes Creation_______________________________________*/
+
+
+
+        // Create the cabled bridge (0 index) and 4 cable nodes
         NodeContainer cabledNodes;
+        cabledNodes.Add(bridgeNodes.Get(0));
         cabledNodes.Create(4);
 
-        // Configure the point to point links
-        PointToPointHelper pointToPointHelper;
-        pointToPointHelper.SetDeviceAttribute ("DataRate", StringValue ("10Mbps"));
-        pointToPointHelper.SetChannelAttribute ("Delay", StringValue ("1ms"));
+        //creating a hub to connect all the cable nodes
+        CsmaHelper hub_0;
+        hub_0.SetChannelAttribute ("DataRate", StringValue ("100Mbps"));
+        hub_0.SetChannelAttribute ("Delay", TimeValue (NanoSeconds (6560)));
 
-        //Assing the point to point links to the respective nodes (OSI Layer 1)
-
-        NetDeviceContainer cableDevices;
-        cableDevices.Add (pointToPointHelper.Install (cabledNodes.Get (0), cabledNodes.Get (2)));
-        cableDevices.Add (pointToPointHelper.Install (cabledNodes.Get (2), cabledNodes.Get (3)));
-        cableDevices.Add (pointToPointHelper.Install (cabledNodes.Get (3), cabledNodes.Get (1)));
-        cableDevices.Add (pointToPointHelper.Install (cabledNodes.Get (1), cabledNodes.Get (0)));
+        //Assing the hub 0 links to the nodes (OSI Layer 1)
+        NetDeviceContainer cableDevices = hub_0.Install(cabledNodes);
 
 
-        // Create the 6 wireless nodes
+
+/*_____________________________________Wireless Nodes Creation_______________________________*/
+
+
+        // Create the wireless bridge (0 index) and 6 wireless nodes
         NodeContainer wirelessNodes;
+        wirelessNodes.Add(bridgeNodes.Get(1));
         wirelessNodes.Create(6);
 
         // Creating the WIFI Helper
@@ -104,65 +129,73 @@ Time::SetResolution (Time::NS);
           NetDeviceContainer wirelessDevices;
           wirelessDevices = wifi.Install (wifiPhy, wifiMac, wirelessNodes);
 
+        
+/*________________________________IP Assignation for ALL Nodes_____________________________*/
 
-        //Installing ipStack for cabled and wireless nodes
+
+
+        //Installing ipStack for cabled and wireless nodes (bridge nodes included in those groups)
         InternetStackHelper ipStack;
         ipStack.Install (cabledNodes);
         ipStack.Install (wirelessNodes);
+        
 
 
-         // Assing the ip addressed to all nodes
-         NS_LOG_INFO ("Assign ip addresses.");
+        // Assing the ip addressed to cabled interfaces
+         NS_LOG_INFO ("Assign ip addresses to bridge nodes.");
          Ipv4AddressHelper ip;
+         ip.SetBase ("10.0.0.0", "255.255.255.0");
+        Ipv4InterfaceContainer bridgeAddresses = ip.Assign (bridgeDevices);
+
+         // Assing the ip addressed to cabled interfaces
+         NS_LOG_INFO ("Assign ip addresses to cabled nodes.");
          ip.SetBase ("192.168.0.0", "255.255.255.0");
+        Ipv4InterfaceContainer cabledAddresses = ip.Assign (cableDevices);
 
-        Ipv4InterfaceContainer addresses = ip.Assign (wirelessDevices.Get (0));
-         Ipv4InterfaceContainer addresses1 = ip.Assign (wirelessDevices.Get (1));
-         Ipv4InterfaceContainer addresses2 = ip.Assign (wirelessDevices.Get (2));
-         Ipv4InterfaceContainer addresses3 = ip.Assign (wirelessDevices.Get (3));  
-         Ipv4InterfaceContainer addresses4 = ip.Assign (wirelessDevices.Get (4));  
-         Ipv4InterfaceContainer addresses5 = ip.Assign (wirelessDevices.Get (5));  
+        // Assing the ip addressed to wireless interfaces
+         NS_LOG_INFO ("Assign ip addresses to wireless nodes.");
+         ip.SetBase ("192.168.1.0", "255.255.255.0");
+        Ipv4InterfaceContainer wirelessAddresses = ip.Assign (wirelessDevices);
 
 
-         Ipv4InterfaceContainer addresses6 = ip.Assign (cableDevices.Get (0));
-         Ipv4InterfaceContainer addresses7 = ip.Assign (cableDevices.Get (1));
-         Ipv4InterfaceContainer addresses8 = ip.Assign (cableDevices.Get (2));
-         Ipv4InterfaceContainer addresses9 = ip.Assign (cableDevices.Get (3));
+
+        
 
   
 
         Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
 
+/*___________________________________________________________________________________________*/
+
 //Configuring the position of the wireless nodes and their mobility
   MobilityHelper mobility;
   Ptr<ListPositionAllocator> positionAlloc = CreateObject <ListPositionAllocator>();
-  positionAlloc ->Add(Vector(0, 0, 0)); // node0
+  positionAlloc ->Add(Vector(0, 0, 0)); // bridge 
   positionAlloc ->Add(Vector(150, 0, 0)); // node1 -- starting very far away
   positionAlloc ->Add(Vector(0, 150, 0)); // node2
   positionAlloc ->Add(Vector(0, 0, 150)); 
   positionAlloc ->Add(Vector(200, 0, 0)); 
   positionAlloc ->Add(Vector(0, 200, 0)); 
+  positionAlloc ->Add(Vector(100, 0, 0)); 
   mobility.SetPositionAllocator(positionAlloc);
   mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
   mobility.Install(wirelessNodes);
 
 
-         // se crea el servidor que va  recibir trafico  que en este caso es el nodo 2
-  UdpEchoServerHelper echoServer (9);
-  ApplicationContainer serverApps = echoServer.Install (wirelessNodes.Get (4));
+ UdpEchoServerHelper echoServer (9);
+  ApplicationContainer serverApps = echoServer.Install (wirelessNodes.Get (2));
   serverApps.Start (Seconds (1.0));
-  serverApps.Stop (Seconds (10.0));
+  serverApps.Stop (Seconds (20.0));
   // los datagramas que  va a enviar el cliente al servidor, se especifica la direccion IP del servidor , el tamaño del paquete
-  UdpEchoClientHelper echoClient (addresses4.GetAddress(0), 9);
+  UdpEchoClientHelper echoClient (wirelessAddresses.GetAddress (2), 9);
     echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
   echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
   echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
   //El cliente es el nodo 0
-  ApplicationContainer clientApps = echoClient.Install (wirelessNodes.Get (1));
-  clientApps.Start (Seconds (4.0));
-  clientApps.Stop (Seconds (10.0));
-pointToPointHelper.EnablePcapAll ("tut1");
+  ApplicationContainer clientApps = echoClient.Install (cabledNodes.Get (3));
+  clientApps.Start (Seconds (2.0));
+  clientApps.Stop (Seconds (20.0));
 
 
 
