@@ -135,10 +135,15 @@ Time::SetResolution (Time::NS);
 
 
         //Installing ipStack for cabled and wireless nodes (bridge nodes included in those groups)
-        InternetStackHelper ipStack;
-        ipStack.Install (cabledNodes);
-        ipStack.Install (wirelessNodes);
-        
+      
+     
+        InternetStackHelper ipStack2;
+        OlsrHelper olsr;
+        Ipv4ListRoutingHelper list;
+        list.Add(olsr,10);
+        ipStack2.SetRoutingHelper(list);
+        ipStack2.Install (wirelessNodes);
+         ipStack2.Install (cabledNodes);
 
 
         // Assing the ip addressed to cabled interfaces
@@ -151,6 +156,10 @@ Time::SetResolution (Time::NS);
          NS_LOG_INFO ("Assign ip addresses to cabled nodes.");
          ip.SetBase ("192.168.0.0", "255.255.255.0");
         Ipv4InterfaceContainer cabledAddresses = ip.Assign (cableDevices);
+
+
+
+
 
         // Assing the ip addressed to wireless interfaces
          NS_LOG_INFO ("Assign ip addresses to wireless nodes.");
@@ -172,52 +181,53 @@ Time::SetResolution (Time::NS);
   MobilityHelper mobility;
   Ptr<ListPositionAllocator> positionAlloc = CreateObject <ListPositionAllocator>();
   positionAlloc ->Add(Vector(0, 0, 0)); // bridge 
-  positionAlloc ->Add(Vector(150, 0, 0)); // node1 -- starting very far away
-  positionAlloc ->Add(Vector(0, 150, 0)); // node2
-  positionAlloc ->Add(Vector(150, 150, 0)); 
-  positionAlloc ->Add(Vector(200, 0, 0)); 
-  positionAlloc ->Add(Vector(0, 200, 0)); 
+  positionAlloc ->Add(Vector(1000, 0, 0)); // node1 -- starting very far away
+  positionAlloc ->Add(Vector(800, 0, 0)); // node2
+  positionAlloc ->Add(Vector(700, 0, 0)); 
+  positionAlloc ->Add(Vector(500, 0, 0)); 
+  positionAlloc ->Add(Vector(300, 0, 0)); 
   positionAlloc ->Add(Vector(100, 0, 0)); 
   mobility.SetPositionAllocator(positionAlloc);
   mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
   mobility.Install(wirelessNodes);
 
 
+
 //Generating OnOff Constant Traffic from all the wireless nodes to a cabled node
  UdpEchoServerHelper echoServer (9);
- ApplicationContainer serverApps = echoServer.Install (cabledNodes.Get (2));
+ ApplicationContainer serverApps = echoServer.Install (cabledNodes.Get (4));
  serverApps.Start (Seconds (1.0));
- serverApps.Stop (Seconds (70.0));
-OnOffHelper onoffconstant("ns3::UdpSocketFactory", InetSocketAddress (cabledAddresses.GetAddress(2),9));
+ serverApps.Stop (Seconds (100.0));
+OnOffHelper onoffconstant("ns3::UdpSocketFactory", InetSocketAddress (cabledAddresses.GetAddress(4),9));
 onoffconstant.SetAttribute("OnTime",StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
 onoffconstant.SetAttribute("OffTime",StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
 ApplicationContainer apps = onoffconstant.Install (wirelessNodes);
 apps.Start (Seconds (2.0));
-apps.Stop (Seconds (68.0));
+apps.Stop (Seconds (99.0));
 
 //Generating OnOff Exponential Traffic from all the wireless nodes to a cabled node
  UdpEchoServerHelper echoServer2 (9);
- ApplicationContainer serverApps2 = echoServer2.Install (cabledNodes.Get (2));
- serverApps2.Start (Seconds (71.0));
- serverApps2.Stop (Seconds (140.0));
-OnOffHelper onoffexponential("ns3::UdpSocketFactory", InetSocketAddress (cabledAddresses.GetAddress(2),9));
+ ApplicationContainer serverApps2 = echoServer2.Install (cabledNodes.Get (4));
+ serverApps2.Start (Seconds (101.0));
+ serverApps2.Stop (Seconds (200.0));
+OnOffHelper onoffexponential("ns3::UdpSocketFactory", InetSocketAddress (cabledAddresses.GetAddress(4),9));
 onoffexponential.SetAttribute("OnTime",StringValue("ns3::ExponentialRandomVariable[Mean=1.0]"));
 onoffexponential.SetAttribute("OffTime",StringValue("ns3::ExponentialRandomVariable[Mean=1.0]"));
 ApplicationContainer apps2 = onoffexponential.Install (wirelessNodes);
-apps2.Start (Seconds (72.0));
-apps2.Stop (Seconds (139.0));
+apps2.Start (Seconds (102.0));
+apps2.Stop (Seconds (199.0));
 
 //Generating OnOff Cauchy Mix Poissson Traffic from all the wireless nodes to a cabled node
  UdpEchoServerHelper echoServer3 (9);
- ApplicationContainer serverApps3 = echoServer3.Install (cabledNodes.Get (2));
- serverApps3.Start (Seconds (141.0));
- serverApps3.Stop (Seconds (210.0));
-OnOffHelper onoffcauchypoissson("ns3::UdpSocketFactory", InetSocketAddress (cabledAddresses.GetAddress(2),9));
+ ApplicationContainer serverApps3 = echoServer3.Install (cabledNodes.Get (4));
+ serverApps3.Start (Seconds (201.0));
+ serverApps3.Stop (Seconds (300.0));
+OnOffHelper onoffcauchypoissson("ns3::UdpSocketFactory", InetSocketAddress (cabledAddresses.GetAddress(4),9));
 onoffcauchypoissson.SetAttribute("OnTime",StringValue("ns3::CauchyRandomVariable[alpha=0|beta=1|min=0|max=3]"));
 onoffcauchypoissson.SetAttribute("OffTime",StringValue("ns3::PoissonRandomVariable[Lambda=1]"));
 ApplicationContainer apps3 = onoffcauchypoissson.Install (wirelessNodes);
-apps3.Start (Seconds (142.0));
-apps3.Stop (Seconds (209.0));
+apps3.Start (Seconds (202.0));
+apps3.Stop (Seconds (299.0));
 
 pointToPoint.EnablePcapAll("PTP-Constant");
 
@@ -227,3 +237,4 @@ pointToPoint.EnablePcapAll("PTP-Constant");
         Simulator::Destroy ();
         return 0;
 }
+
